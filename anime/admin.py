@@ -23,8 +23,13 @@ class StatusAdmin(admin.ModelAdmin):
 
 @admin.register(Anime)
 class AnimeAdmin(admin.ModelAdmin):
+    filter_horizontal = ('genres',)
+
     def get_list_display(self, request):
-        # Проверка на статус "анонс"
         if request.GET.get('status__exact') == 'Анонс':
             return ['title_name', 'status', 'studio', 'director']
-        return ['title_name', 'status', 'studio', 'director', 'date', 'genres'] 
+        return ['title_name', 'status', 'studio', 'director', 'date', 'display_genres']
+
+    def display_genres(self, obj):
+        return ", ".join([genre.name for genre in obj.genres.all()])
+    display_genres.short_description = 'Жанры' 
