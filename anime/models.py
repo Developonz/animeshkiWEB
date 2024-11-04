@@ -56,13 +56,17 @@ class Status(models.Model):
         return self.name
 
 
+# models.py
+from django.db import models
+from django.core.exceptions import ValidationError
+
 class Anime(models.Model):
     title_name = models.TextField("Название аниме")
+    status = models.ForeignKey("Status", on_delete=models.SET_NULL, null=True)
     date = models.DateField("Дата выпуска", blank=True, null=True)
-    studio = models.ForeignKey("Studio", on_delete=models.CASCADE, null=True)
+    studio = models.ForeignKey("Studio", on_delete=models.SET_NULL, null=True)
     director = models.ForeignKey("Director", on_delete=models.SET_NULL, null=True)
     genres = models.ManyToManyField("Genre", verbose_name="Жанры")
-    status = models.ForeignKey("Status", on_delete=models.SET_NULL, null=True)
 
     class Meta:
         verbose_name = "Аниме"
@@ -72,7 +76,16 @@ class Anime(models.Model):
         return self.title_name
 
     def clean(self):
-        if self.status and (self.status.name == "Вышел" or self.status.name == "Онгоинг") and not self.date:
-            raise ValidationError("Дата выпуска обязательна, если статус 'Вышел или Онгоинг'.")
-
-
+        errors = {}
+        if self.status is None:
+            errors['status'] = 'Поле статус обязательно для заполнения.'
+        else:
+            if self.status.name != 'Анонс':
+                if self.director is None:
+                    errors['director'] = 'Поле директор обязательно для заполнения.'
+                if self.date is None:
+                    errors['date'] = 'Поле дата выпуска обязательно для заполнения.'
+                if self.studio is None:
+                    errors['studio'] = 'Поле студия обязательно для заполнения.'
+        if errors:
+            raise ValidationError(errors)
