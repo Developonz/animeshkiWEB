@@ -1,0 +1,292 @@
+<template>
+    <div class="container mt-5">
+      <h1 class="mb-4">Студии</h1>
+  
+      <!-- Форма для добавления новой студии -->
+      <form @submit.prevent="onStudioAdd">
+        <div class="row align-items-end">
+          <!-- Поле Название студии -->
+          <div class="col">
+            <div class="form-floating">
+              <input
+                type="text"
+                class="form-control"
+                v-model="studioToAdd.name"
+                required
+                placeholder="Название студии"
+              />
+              <label>Название студии</label>
+            </div>
+          </div>
+  
+          <!-- Поле Страна -->
+          <div class="col">
+            <div class="form-floating">
+              <select class="form-select" v-model="studioToAdd.country">
+                <option :value="null">Не выбрано</option>
+                <option
+                  v-for="country in countries"
+                  :key="country.id"
+                  :value="country.id"
+                >
+                  {{ country.name }}
+                </option>
+              </select>
+              <label>Страна</label>
+            </div>
+          </div>
+  
+          <div class="col d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary">
+              Добавить
+            </button>
+          </div>
+        </div>
+      </form>
+  
+      <!-- Список студий -->
+      <table class="table table-striped mt-5">
+        <thead>
+          <tr>
+            <th>Название студии</th>
+            <th class="col-md-2">Страна</th>
+            <th class="col-md-1">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="studio in studios" :key="studio.id">
+            <td>{{ studio.name }}</td>
+            <td>{{ getCountryName(studio.country) }}</td>
+            <td>
+              <button
+                class="btn btn-success btn-sm me-2"
+                @click="onStudioEdit(studio)"
+                data-bs-toggle="modal"
+                data-bs-target="#editStudioModal"
+                title="Редактировать"
+              >
+                <i class="bi bi-pen-fill"></i>
+              </button>
+              <button
+                class="btn btn-danger btn-sm"
+                @click="onStudioDelete(studio.id)"
+                title="Удалить"
+              >
+                <i class="bi bi-x"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+  
+      <!-- Модальное окно для редактирования -->
+      <div
+        class="modal fade"
+        id="editStudioModal"
+        tabindex="-1"
+        aria-labelledby="editStudioModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form @submit.prevent="onStudioUpdate">
+              <div class="modal-header">
+                <h5 class="modal-title" id="editStudioModalLabel">
+                  Редактировать студию
+                </h5>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Закрыть"
+                ></button>
+              </div>
+              <div class="modal-body">
+                <!-- Поле Название студии -->
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    v-model="studioToEdit.name"
+                    required
+                    placeholder="Название студии"
+                  />
+                  <label>Название студии</label>
+                </div>
+  
+                <!-- Поле Страна -->
+                <div class="form-floating mb-3">
+                  <select class="form-select" v-model="studioToEdit.country">
+                    <option :value="null">Не выбрано</option>
+                    <option
+                      v-for="country in countries"
+                      :key="country.id"
+                      :value="country.id"
+                    >
+                      {{ country.name }}
+                    </option>
+                  </select>
+                  <label>Страна</label>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  @click="closeModal"
+                >
+                  Отмена
+                </button>
+                <button type="submit" class="btn btn-primary">
+                  Сохранить
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+  
+  <script setup>
+  import { ref, onMounted } from 'vue';
+  import axios from 'axios';
+  import Cookies from 'js-cookie';
+  import { Modal } from 'bootstrap';
+  
+  // Реактивные переменные
+  const studios = ref([]);
+  const countries = ref([]);
+  const studioToAdd = ref({
+    name: '',
+    country: null,
+  });
+  const studioToEdit = ref({
+    id: null,
+    name: '',
+    country: null,
+  });
+  
+  // Экземпляр модального окна
+  const editModal = ref(null);
+  
+  // Функции загрузки данных с бэкенда
+  async function fetchStudios() {
+    try {
+      const response = await axios.get('/api/studios/');
+      studios.value = response.data;
+    } catch (error) {
+      console.error('Ошибка при загрузке студий:', error);
+      alert('Не удалось загрузить студии.');
+    }
+  }
+  
+  async function fetchCountries() {
+    try {
+      const response = await axios.get('/api/countries/');
+      countries.value = response.data;
+    } catch (error) {
+      console.error('Ошибка при загрузке стран:', error);
+      alert('Не удалось загрузить страны.');
+    }
+  }
+  
+  // Функция добавления новой студии
+  async function onStudioAdd() {
+    try {
+      await axios.post('/api/studios/', studioToAdd.value);
+      await fetchStudios();
+      // Сброс формы
+      studioToAdd.value = { name: '', country: null };
+    } catch (error) {
+      handleError(error, 'добавлении студии');
+    }
+  }
+  
+  // Функция подготовки к редактированию студии
+  function onStudioEdit(studio) {
+    studioToEdit.value = { ...studio };
+    // Показать модальное окно после подготовки данных
+    editModal.value.show();
+  }
+  
+  // Функция обновления студии
+  async function onStudioUpdate() {
+    try {
+      await axios.put(`/api/studios/${studioToEdit.value.id}/`, studioToEdit.value);
+      await fetchStudios();
+      closeModal();
+    } catch (error) {
+      handleError(error, 'обновлении студии');
+    }
+  }
+  
+  // Функция удаления студии
+  async function onStudioDelete(id) {
+    if (!confirm('Вы уверены, что хотите удалить эту студию?')) {
+      return;
+    }
+  
+    try {
+      await axios.delete(`/api/studios/${id}/`);
+      await fetchStudios();
+    } catch (error) {
+      console.error('Ошибка при удалении студии:', error);
+      alert('Не удалось удалить студию.');
+    }
+  }
+  
+  // Вспомогательная функция для отображения имени страны
+  function getCountryName(countryId) {
+    const country = countries.value.find((country) => country.id === countryId);
+    return country ? country.name : 'Не выбрано';
+  }
+  
+  // Функция для обработки ошибок
+  function handleError(error, context) {
+    if (error.response && error.response.data) {
+      const errorMessages = [];
+      for (const [field, messages] of Object.entries(error.response.data)) {
+        errorMessages.push(`${field}: ${messages.join(', ')}`);
+      }
+      alert(`Ошибка при ${context}:\n${errorMessages.join('\n')}`);
+    } else {
+      console.error(error);
+      alert(`Произошла неизвестная ошибка при ${context}.`);
+    }
+  }
+  
+  // Загрузка данных при монтировании компонента
+  onMounted(() => {
+    fetchStudios();
+    fetchCountries();
+    // Установка CSRF токена
+    axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
+  
+    // Инициализация модального окна
+    const modalElement = document.getElementById('editStudioModal');
+    editModal.value = new Modal(modalElement, {
+      backdrop: 'static', // Не закрывать при клике на backdrop
+      keyboard: false, // Не закрывать при нажатии клавиши Esc
+    });
+  });
+  
+  // Добавить функцию closeModal
+  function closeModal() {
+    const modalElement = document.getElementById('editStudioModal');
+    const modalInstance = Modal.getInstance(modalElement);
+    modalInstance.hide();
+    setTimeout(() => {
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      backdrops.forEach(backdrop => backdrop.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }, 150);
+  }
+  </script>
+  
+  <style scoped>
+  /* Дополнительные стили при необходимости */
+  </style>
+  
