@@ -10,6 +10,19 @@ from rest_framework.viewsets import GenericViewSet
 class AnimeViewSet(viewsets.ModelViewSet):
     queryset = Anime.objects.all()
     serializer_class = AnimeSerializer
+    queryset = Anime.objects.all()
+    serializer_class = AnimeSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        
+        # фильтруем по текущему юзеру только если он аутентифицирован
+        if self.request.user.is_authenticated:
+            qs = qs.filter(user=self.request.user)
+        else:
+            qs = qs.none()  # возвращаем пустой QuerySet для неаутентифицированных пользователей
+
+        return qs
   
 
 class GenreViewSet(viewsets.ModelViewSet):

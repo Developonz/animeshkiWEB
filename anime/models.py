@@ -68,6 +68,7 @@ class Anime(models.Model):
     director = models.ForeignKey("Director", on_delete=models.SET_NULL, null=True)
     genres = models.ManyToManyField("Genre", verbose_name="Жанры")
     picture = models.ImageField(upload_to='anime_pictures/', null=True, blank=True)
+    user = models.ForeignKey("auth.User", verbose_name="Пользователь", on_delete=models.CASCADE, null=True)
 
     class Meta:
         verbose_name = "Аниме"

@@ -59,8 +59,8 @@
               class="form-select" 
               v-model="animeToAdd.studio"
               :required="!isAnnouncement"
+              placeholder="Студия"
             >
-              <option :value="null">Не выбрано</option>
               <option
                 v-for="studio in studios"
                 :key="studio.id"
@@ -80,8 +80,8 @@
               class="form-select" 
               v-model="animeToAdd.director"
               :required="!isAnnouncement"
+              placeholder="Директор"
             >
-              <option :value="null">Не выбрано</option>
               <option
                 v-for="director in directors"
                 :key="director.id"
@@ -174,7 +174,7 @@
           <th>Директор</th>
           <th>Жанры</th>
           <th>Статус</th>
-          <th class="col-2">Изображение</th>
+          <th class="col-2 text-center">Изображение</th>
           <th>Действия</th>
         </tr>
       </thead>
@@ -187,10 +187,10 @@
           <td>{{ getGenreNames(anime.genres).join(', ') }}</td>
           <td>{{ getStatusName(anime.status) }}</td>
           <td>
-            <div v-if="anime.picture">
+            <div v-if="anime.picture" class="d-flex justify-content-center align-items-center">
               <img 
                 :src="getFullImageUrl(anime.picture)" 
-                style="max-height: 60px; max-width: 60px; cursor: pointer;" 
+                style="max-height: 60px; max-width: auto; cursor: pointer;" 
                 alt="Изображение аниме"
                 @click="showImage(getFullImageUrl(anime.picture))"
               />
@@ -299,8 +299,9 @@
                       class="form-select" 
                       v-model="animeToEdit.director"
                       :required="!isAnnouncementEdit"
+                      placeholder="Директор"
                     >
-                      <option :value="null">Не выбрано</option>
+                      <option value="">Выберите директора</option>
                       <option
                         v-for="director in directors"
                         :key="director.id"
@@ -319,8 +320,9 @@
                       class="form-select" 
                       v-model="animeToEdit.studio"
                       :required="!isAnnouncementEdit"
+                      placeholder="Студия"
                     >
-                      <option :value="null">Не выбрано</option>
+                      <option value="">Выберите студию</option>
                       <option
                         v-for="studio in studios"
                         :key="studio.id"
@@ -829,7 +831,7 @@ function getImageUrl(relativePath) {
     return relativePath;
   }
   
-  // Для относительных путей добавляем базовый URL Django сервера
+  // Для относительных путей доб��вляем базовый URL Django сервера
   const baseUrl = 'http://localhost:8000';
   // Убираем дублирующиеся слеши
   const cleanPath = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
@@ -858,7 +860,7 @@ onMounted(() => {
   const imageModalElement = document.getElementById('imageModal');
   imageModal.value = new Modal(imageModalElement, {
     backdrop: 'static', // Не закрывать при клике на backdrop
-    keyboard: false, // Не закрывать при нажатии клавиши Esc
+    keyboard: false, // Не закрыва��ь при нажатии клавиши Esc
   });
 });
 

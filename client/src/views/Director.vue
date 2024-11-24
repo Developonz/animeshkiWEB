@@ -37,7 +37,7 @@
         <thead>
           <tr>
             <th>Имя директора</th>
-            <th class="col-2">Изображение</th>
+            <th class="col-2 text-center">Изображение</th>
             <th class="col-md-1">Действия</th>
           </tr>
         </thead>
@@ -45,10 +45,10 @@
           <tr v-for="director in directors" :key="director.id">
             <td>{{ director.name }}</td>
             <td>
-              <div v-if="director.picture">
+              <div v-if="director.picture" class="d-flex justify-content-center align-items-center">
                 <img 
                   :src="getFullImageUrl(director.picture)" 
-                  style="max-height: 60px; max-width: 60px; cursor: pointer;" 
+                  style="max-height: 60px; max-width: auto; cursor: pointer;" 
                   alt="Изображение директора"
                   @click="showImage(getFullImageUrl(director.picture))"
                 />

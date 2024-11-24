@@ -44,6 +44,8 @@ class AnimeSerializer(serializers.ModelSerializer):
         genres = validated_data.pop('genres', [])
         anime = Anime.objects.create(**validated_data)
         anime.genres.set(genres)
+        if 'request' in self.context:
+            anime.user = self.context['request'].user
         return anime
 
     def update(self, instance, validated_data):

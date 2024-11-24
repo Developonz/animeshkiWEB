@@ -37,7 +37,7 @@
         <thead>
           <tr>
             <th>Название страны</th>
-            <th class="col-2">Изображение</th>
+            <th class="col-2 text-center">Изображение</th>
             <th class="col-md-1">Действия</th>
           </tr>
         </thead>
@@ -45,10 +45,10 @@
           <tr v-for="country in countries" :key="country.id">
             <td>{{ country.name }}</td>
             <td>
-              <div v-if="country.picture">
+              <div v-if="country.picture" class="d-flex justify-content-center align-items-center">
                 <img 
                   :src="getFullImageUrl(country.picture)" 
-                  style="max-height: 60px; max-width: 60px; cursor: pointer;" 
+                  style="max-height: 60px; max-width: auto; cursor: pointer;" 
                   alt="Изображение страны"
                   @click="showImage(getFullImageUrl(country.picture))"
                 />
