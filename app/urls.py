@@ -5,6 +5,7 @@ from anime.api import AnimeViewSet, GenreViewSet, StudioViewSet, DirectorViewSet
 from anime.views import ShowAnimesView
 from django.conf.urls.static import static
 from django.conf import settings
+from anime.api import UserProfileViewSet
 
 # Создаем роутер и регистрируем вьюсеты
 router = DefaultRouter()
@@ -14,6 +15,7 @@ router.register(r'studios', StudioViewSet)
 router.register(r'directors', DirectorViewSet)
 router.register(r'statuses', StatusViewSet)
 router.register(r'countries', CountryViewSet)
+router.register(r'user', UserProfileViewSet, basename='user')
 
 
 urlpatterns = [

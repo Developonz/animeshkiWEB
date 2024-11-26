@@ -2,6 +2,23 @@
   <div class="container mt-5">
     <h1 class="mb-4">Аниме</h1>
 
+    <!-- Фильтр по пользователям -->
+    <div v-if="is_superuser" class="mb-4">
+      <div class="form-floating">
+        <select class="form-select w-25" v-model="userToFilter">
+          <option value="all">Все пользователи</option>
+          <option 
+            v-for="username in usersToFilter" 
+            :key="username"
+            :value="username"
+          >
+            {{ username }}
+          </option>
+        </select>
+        <label>Фильтр по пользователю</label>
+      </div>
+    </div>
+
     <!-- Форма для добавления нового аниме -->
     <form @submit.prevent="onAnimeAdd">
       <!-- Первая строка полей -->
@@ -223,6 +240,7 @@
       class="modal fade"
       id="editAnimeModal"
       tabindex="-1"
+      role="dialog"
       aria-labelledby="editAnimeModalLabel"
       aria-hidden="true"
     >
@@ -443,19 +461,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+
+import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { Modal } from 'bootstrap';
 
-/* 
-import {storeToRefs} from "pinia";
-import useUserProfileStore from "@/stores/UserProfileStore";
+import { useUserProfileStore } from "@/stores/UserProfileStore";
 const userProfileStore = useUserProfileStore();
-const {is_auth, username, is_superuser} = storeToRefs(userProfileStore); 
-*/
 
-
+// Если нужен доступ к состоянию store через storeToRefs
+import { storeToRefs } from 'pinia';
+const { is_auth, username, is_superuser } = storeToRefs(userProfileStore);
 
 // Реативные переменные
 const animes = ref([]);
@@ -513,18 +530,36 @@ const isAnnouncementEdit = computed(() => {
   return animeToEdit.value.status === announcementStatus?.id;
 });
 
-// Функции загрузки данных с бэкенда
+// Реактивные переменные для фильтрации
+const userToFilter = ref('all');
+const usersToFilter = ref([]);
+
+// Функция загрузки пользователей
+async function fetchUsers() {
+  try {
+    const response = await axios.get('/api/animes/users/');
+    usersToFilter.value = response.data;
+  } catch (error) {
+    console.error('Ошибка при загрузке пользователей:', error);
+  }
+}
+
+// Измените существующую функцию fetchAnimes
 async function fetchAnimes() {
   try {
-    const response = await axios.get('/api/animes/');
+    let url = '/api/animes/';
+    if (userToFilter.value && userToFilter.value !== 'all') {
+      url += `?user=${userToFilter.value}`;
+    }
+    const response = await axios.get(url);
     animes.value = response.data;
-    console.log('Полученные аниме:', animes.value);
   } catch (error) {
     console.error('Ошибка при загрузке аниме:', error);
     alert('Не удалось загрузить список аниме.');
   }
 }
 
+// Функции загрузки данных с бэкенда
 async function fetchGenres() {
   try {
     const response = await axios.get('/api/genres/');
@@ -578,10 +613,6 @@ async function animesAddPictureEditChange() {
 
 // Функция добавления нового аниме
 async function onAnimeAdd() {
-  if (selectedGenresAdd.value.length === 0) {
-    alert('Пожалуйста, выберите хотя бы один жанр.');
-    return;
-  }
 
   const formData = new FormData();
   
@@ -752,7 +783,7 @@ function toggleGenresAdd() {
 // Функция переключения жанров в редактировании
 function toggleGenresEdit() {
   if (selectedAvailableGenresEdit.value.length > 0) {
-    // Перемещение из доступных в выбранные
+    // ремещение из доступных в выбранные
     selectedAvailableGenresEdit.value.forEach((genreId) => {
       const genre = availableGenresEdit.value.find((g) => g.id === genreId);
       if (genre) {
@@ -831,7 +862,7 @@ function getImageUrl(relativePath) {
     return relativePath;
   }
   
-  // Для относительных путей доб��вляем базовый URL Django сервера
+  // Для отосительных путей добвляем базовый URL Django сервера
   const baseUrl = 'http://localhost:8000';
   // Убираем дублирующиеся слеши
   const cleanPath = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
@@ -839,28 +870,34 @@ function getImageUrl(relativePath) {
   return `${baseUrl}${cleanPath}`;
 }
 
-// Загрузка данных при монтировании компонента
-onMounted(() => {
-  fetchAnimes();
+// В onMounted добавьте вызов fetchUsers
+onMounted(async () => {
+  await userProfileStore.fetchUserProfile();
+  
+  if (is_superuser.value) {
+    await fetchUsers();
+  }
+  
+  await fetchAnimes();
   fetchGenres();
   fetchStudios();
   fetchDirectors();
   fetchStatuses();
+  
   // Установка CSRF токена
   axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
 
-  // Инициализация модального окна
+  // Инициализация модальных окон
   const modalElement = document.getElementById('editAnimeModal');
   editModal.value = new Modal(modalElement, {
-    backdrop: 'static', // Не закрывать при клике на backdrop
-    keyboard: false, // Не закрывать при нажатии клавиши Esc
+    backdrop: 'static',
+    keyboard: false,
   });
 
-  // Инициализация модального окна для изображения
   const imageModalElement = document.getElementById('imageModal');
   imageModal.value = new Modal(imageModalElement, {
-    backdrop: 'static', // Не закрывать при клике на backdrop
-    keyboard: false, // Не закрыва��ь при нажатии клавиши Esc
+    backdrop: 'static',
+    keyboard: false,
   });
 });
 
@@ -915,6 +952,11 @@ function showImage(imageUrl) {
   const modal = new Modal(document.getElementById('imageModal'));
   modal.show();
 }
+
+// Добавьте watch для отслеживания изменений фильтра
+watch(userToFilter, () => {
+  fetchAnimes();
+});
 </script>
 
 <style lang="scss" scoped>

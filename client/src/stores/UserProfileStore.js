@@ -1,17 +1,28 @@
-import {defineStore} from "pinia";
+import { defineStore } from 'pinia'
+import axios from 'axios'
 
-const useUserProfileStore = defineStore("userProfile", () => {
-    const is_auth = ref();
-    const username = ref();
-    const is_superuser = ref();
+export const useUserProfileStore = defineStore('userProfile', {
+  state: () => ({
+    is_auth: false,
+    username: '',
+    is_superuser: false
+  }),
 
-    onBeforeMount(() => {
-        const response = axios.get("/api/user/profile/info");
-        is_auth.value = response.data.is_authenticated;
-        username.value = response.data.username;
-    });
-
-    return {is_auth, username, is_superuser};
-});
-
-export default useUserProfileStore;
+  actions: {
+    async fetchUserProfile() {
+      try {
+        const response = await axios.get('/api/user/info/')
+        if (response.data) {
+          this.is_auth = response.data.is_authenticated || false
+          this.username = response.data.name || ''
+          this.is_superuser = response.data.is_superuser || false
+        }
+      } catch (error) {
+        console.log('Пользователь не аутентифицирован')
+        this.is_auth = false
+        this.username = ''
+        this.is_superuser = false
+      }
+    }
+  }
+})

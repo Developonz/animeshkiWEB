@@ -74,6 +74,10 @@ class Anime(models.Model):
         verbose_name = "Аниме"
         verbose_name_plural = "Анимешки"
 
+    @property
+    def username(self):
+        return self.user.username if self.user else '-'
+
     def __str__(self) -> str:
         return self.title_name
 

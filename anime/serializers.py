@@ -4,13 +4,12 @@ from rest_framework.exceptions import ValidationError as DRFValidationError
 from .models import Anime, Status, Studio, Director, Genre, Country
 
 class AnimeSerializer(serializers.ModelSerializer):
-    picture_url = serializers.SerializerMethodField(read_only=True)
-
     status = serializers.PrimaryKeyRelatedField(queryset=Status.objects.all(), allow_null=False)
-    director = serializers.PrimaryKeyRelatedField(queryset=Director.objects.all(), allow_null=True, required=False)
-    studio = serializers.PrimaryKeyRelatedField(queryset=Studio.objects.all(), allow_null=True, required=False)
-    genres = serializers.PrimaryKeyRelatedField(queryset=Genre.objects.all(), many=True, required=True)
     date = serializers.DateField(allow_null=True, required=False)
+    studio = serializers.PrimaryKeyRelatedField(queryset=Studio.objects.all(), allow_null=True, required=False)
+    director = serializers.PrimaryKeyRelatedField(queryset=Director.objects.all(), allow_null=True, required=False)
+    genres = serializers.PrimaryKeyRelatedField(queryset=Genre.objects.all(), many=True, required=True)
+    picture_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Anime
@@ -22,14 +21,13 @@ class AnimeSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.picture.url)
         return None
 
-    def validate_genres(self, value):
-        if not value:
-            raise serializers.ValidationError('Поле "Жанры" обязательно для заполнения и не может быть пустым.')
-        return value
-
     def validate(self, data):
         status = data.get('status')
         if status and status.name.lower() != 'анонс':
+            if not data.get('studio') and not data.get('director'):
+                raise serializers.ValidationError({
+                    'studio': 'Для не анонсированного аниме студия и режиссёр обязательны'
+                })
             if not data.get('studio'):
                 raise serializers.ValidationError({
                     'studio': 'Для не анонсированного аниме студия обязательна'
@@ -38,14 +36,19 @@ class AnimeSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({
                     'director': 'Для не анонсированного аниме директор обязателен'
                 })
+        genres = data.get('genres')
+        if not genres:
+            raise serializers.ValidationError({
+                'genres': 'Поле "Жанры" обязательно для заполнения.'
+            })
         return data
 
     def create(self, validated_data):
         genres = validated_data.pop('genres', [])
+        if 'request' in self.context:
+            validated_data['user'] = self.context['request'].user
         anime = Anime.objects.create(**validated_data)
         anime.genres.set(genres)
-        if 'request' in self.context:
-            anime.user = self.context['request'].user
         return anime
 
     def update(self, instance, validated_data):
@@ -56,6 +59,8 @@ class AnimeSerializer(serializers.ModelSerializer):
         if genres is not None:
             instance.genres.set(genres)
         return instance
+    
+
 
 
 class GenreSerializer(serializers.ModelSerializer):
