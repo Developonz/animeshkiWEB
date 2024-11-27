@@ -1,9 +1,10 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from .models import Anime, Genre, Studio, Director, Status, Country
 from .serializers import AnimeSerializer, GenreSerializer, StudioSerializer, DirectorSerializer, StatusSerializer, CountrySerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
+from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 from django.contrib.auth.models import User
 
 
@@ -13,6 +14,9 @@ class AnimeViewSet(viewsets.ModelViewSet):
     serializer_class = AnimeSerializer
 
     def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            raise PermissionDenied("Пожалуйста, авторизуйтесь для просмотра списка аниме")
+            
         qs = super().get_queryset()
         user_filter = self.request.query_params.get('user', None)
         

@@ -2,23 +2,6 @@
   <div class="container mt-5">
     <h1 class="mb-4">Аниме</h1>
 
-    <!-- Фильтр по пользователям -->
-    <div v-if="is_superuser" class="mb-4">
-      <div class="form-floating">
-        <select class="form-select w-25" v-model="userToFilter">
-          <option value="all">Все пользователи</option>
-          <option 
-            v-for="username in usersToFilter" 
-            :key="username"
-            :value="username"
-          >
-            {{ username }}
-          </option>
-        </select>
-        <label>Фильтр по пользователю</label>
-      </div>
-    </div>
-
     <!-- Форма для добавления нового аниме -->
     <form @submit.prevent="onAnimeAdd">
       <!-- Первая строка полей -->
@@ -180,6 +163,23 @@
         </div>
       </div>
     </form>
+
+    <!-- Фильтр по пользователям -->
+    <div v-if="is_superuser" class="mb-4">
+      <div class="form-floating">
+        <select class="form-select w-25" v-model="userToFilter">
+          <option value="all">Все пользователи</option>
+          <option 
+            v-for="username in usersToFilter" 
+            :key="username"
+            :value="username"
+          >
+            {{ username }}
+          </option>
+        </select>
+        <label>Фильтр по пользователю</label>
+      </div>
+    </div>
 
     <!-- Список аниме -->
     <table class="table table-striped mt-5">
@@ -554,8 +554,12 @@ async function fetchAnimes() {
     const response = await axios.get(url);
     animes.value = response.data;
   } catch (error) {
-    console.error('Ошибка при загрузке аниме:', error);
-    alert('Не удалось загрузить список аниме.');
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      alert('Пожалуйста, авторизуйтесь для просмотра списка аниме');
+    } else {
+      console.error('Ошибка при загрузке аниме:', error);
+      alert('Не удалось загрузить список аниме.');
+    }
   }
 }
 
