@@ -376,8 +376,7 @@
     modal.show();
   }
   </script>
-  
-  <style scoped>
+    <style scoped>
   /* Здесь могут быть специфичные стили для компонента Country */
   </style>
   

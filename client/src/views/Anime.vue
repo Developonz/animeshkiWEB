@@ -962,7 +962,6 @@ watch(userToFilter, () => {
   fetchAnimes();
 });
 </script>
-
 <style lang="scss" scoped>
 
 /* Фиксированные размеры для полей выбора жанров */
@@ -978,3 +977,4 @@ watch(userToFilter, () => {
   margin-bottom: 0.5rem;
 }
 </style>
+

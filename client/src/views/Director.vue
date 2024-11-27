@@ -375,8 +375,7 @@
     modal.show();
   }
   </script>
-  
-  <style scoped>
+    <style scoped>
   /* Дополнительные стили при необходимости */
   </style>
   
