@@ -43,7 +43,21 @@
           </div>
         </div>
       </form>
-  
+      
+      <div class="card mb-4 mt-4">
+        <div class="card-body">
+          <h5 class="card-title">Статистика студий</h5>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <strong>Всего студий: </strong> {{ studioStats['Всего студий:'] || 0 }}
+            </li>
+            <li class="list-group-item">
+              <strong>Наиболее продуктивная студия: </strong> {{ studioStats['Наиболее продуктивная студия:'] || '-' }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <!-- Список студий -->
       <table class="table table-striped mt-5">
         <thead>
@@ -169,7 +183,17 @@
   
   // Экземпляр модального окна
   const editModal = ref(null);
-  
+  const studioStats = ref({});
+
+  async function fetchStudioStats() {
+    try {
+      const response = await axios.get('/api/studios/stats/');
+      studioStats.value = response.data;
+    } catch (error) {
+      console.error('Ошибка при загрузке статистики студий:', error);
+    }
+  }
+
   // Функции загрузки данных с бэкенда
   async function fetchStudios() {
     try {
@@ -262,7 +286,7 @@
     fetchCountries();
     // Установка CSRF токена
     axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
-  
+    fetchStudioStats();
     // Инициализация модального окна
     const modalElement = document.getElementById('editStudioModal');
     editModal.value = new Modal(modalElement, {

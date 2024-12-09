@@ -181,6 +181,34 @@
       </div>
     </div>
 
+    <!-- Блок для отображения статистики -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Статистика аниме</h5>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">
+            <strong>Всего аниме:</strong> {{ animeStats['Всего аниме:'] || 0 }}
+          </li>
+          <li class="list-group-item">
+            <strong>Распределение по статусу:</strong>
+            <ul>
+              <li v-for="(count, status) in animeStats['Распределение по статусу:']" :key="status">
+                {{ status }}: {{ count }}
+              </li>
+            </ul>
+          </li>
+          <li class="list-group-item">
+            <strong>Максимум аниме в году:</strong>
+            <ul>
+              <li v-for="(count, year) in animeStats['Максимум аниме в году:']" :key="year">
+                {{ year }}: {{ count }}
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+
     <!-- Список аниме -->
     <table class="table table-striped mt-5">
       <thead>
@@ -446,7 +474,7 @@
       </div>
     </div>
 
-    <!-- Добавить в template после основного модального окна -->
+
     <div class="modal fade" id="imageModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -458,7 +486,11 @@
       </div>
     </div>
   </div>
+
+  
+
 </template>
+
 
 <script setup>
 
@@ -519,6 +551,9 @@ const animeAddImageEditUrl = ref();
 // Экземпляр модального окна
 const editModal = ref(null);
 
+const animeStats = ref({});
+
+
 // Добавьте вычисляемое свойство
 const isAnnouncement = computed(() => {
   const announcementStatus = statuses.value.find(s => s.name.toLowerCase() === 'анонс');
@@ -533,6 +568,17 @@ const isAnnouncementEdit = computed(() => {
 // Реактивные переменные для фильтрации
 const userToFilter = ref('all');
 const usersToFilter = ref([]);
+
+async function fetchAnimeStats() {
+  try {
+    const response = await axios.get('/api/animes/stats/');
+    animeStats.value = response.data;
+  } catch (error) {
+    console.error('Ошибка при загрузке статистики аниме:', error);
+    alert('Не удалось загрузить статистику аниме.');
+  }
+}
+
 
 // Функция загрузки пользователей
 async function fetchUsers() {
@@ -887,6 +933,7 @@ onMounted(async () => {
   fetchStudios();
   fetchDirectors();
   fetchStatuses();
+  fetchAnimeStats();
   
   // Установка CSRF токена
   axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');

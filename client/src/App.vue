@@ -16,7 +16,7 @@
               <router-link to="/" class="nav-link" aria-current="page">Аниме</router-link>
             </li>
             <li class="nav-item">
-              <router-link to="/directors" class="nav-link">Директоры</router-link>
+              <router-link to="/directors" class="nav-link">Режиссеры</router-link>
             </li>
             <li class="nav-item">
               <router-link to="/studios" class="nav-link">Студии</router-link>

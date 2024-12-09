@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from faker import Faker
-from random import choice, randint, random
+from random import choice, choices, randint, random
 from datetime import datetime, timedelta
 
 from anime.models import Director, Studio, Anime, Country, Genre, Status
@@ -26,8 +26,19 @@ class Command(BaseCommand):
             "Satoshi Kon", "Mamoru Hosoda", "Masaaki Yuasa",
             "Shinichiro Watanabe", "Hiroyuki Imaishi", "Kunihiko Ikuhara",
             "Yoshiyuki Tomino", "Gen Urobuchi", "Tetsuro Araki",
-            "Masashi Kishimoto", "Eiichiro Oda", "Naoko Takeuchi"
+            "Masashi Kishimoto", "Eiichiro Oda", "Naoko Takeuchi",
+            "Katsuhiro Otomo", "Tatsuya Ishihara", "Yasuhiro Yoshiura", "Mamoru Oshii",
+            "Kiyoshi Kurosawa", "Takahiro Omori", "Rintaro", "Shinji Aramaki",
+            "Yoko Kanno", "Hiroshi Hamasaki", "Yoshiyuki Sadamoto", "Kenji Kamiyama",
+            "Keiichi Sato", "Satoshi Kuwabara", "Yoshikazu Yasuhiko", "Hideki Anno",
+            "Isao Takahata", "Hiroshi Noguchi", "Takashi Murakami", "Atsuko Ishizuka",
+            "Nobuyuki Takeuchi", "Shuhei Morita", "Kazuya Tsurumaki", "Yoshihiro Nishimura",
+            "Makoto Nagahama", "Sakamoto Sato", "Kazuo Sakai", "Kazuki Akane",
+            "Yasuhiro Takemoto", "Yuto Kuroda", "Hidetaka Anno", "Kenji Okada",
+            "Yun Jun-sik", "Kim Seong-ho", "Zhang Yimou", "Chen Kaige",
+            "Ying Xianwen", "Wang Wei", "Xu Anhua", "Yuya Ishii"
         ]
+
         
         for name in famous_directors:
             director = Director.objects.create(
@@ -36,12 +47,6 @@ class Command(BaseCommand):
             )
             directors.append(director)
         
-        for i in range(DIRECTORS_COUNT - len(famous_directors)):
-            director = Director.objects.create(
-                name=f"{fake.first_name()} {fake.last_name()}",
-                picture=None
-            )
-            directors.append(director) 
             
         self.stdout.write('Создаём студии...')
         studios = []
@@ -67,7 +72,6 @@ class Command(BaseCommand):
             ('Dong Woo Animation', 'Korea'),
             ('Rough Draft Korea', 'Korea'),
             ('Studio Animal', 'Korea'),
-            ('EMK Musical Company', 'Korea'),
             # Chinese studios
             ('Colored Pencil Animation', 'China'),
             ('B.CMAY PICTURES', 'China'),
@@ -76,10 +80,10 @@ class Command(BaseCommand):
             ('Nice Boat Animation', 'China'),
             ('Fantawild Animation', 'China'),
             ('Wolf Smoke Studio', 'China'),
-            ('Shanghai Animation Film Studio', 'China'),
-            ('Feitong Cartoon', 'China'),
-            ('Youku Animation', 'China')
+            ('Shanghai Animation Film Studio', 'China')
         ]
+
+
         
         for name, country_name in studio_data:
             country = next((c for c in countries if c.name == country_name), countries[0])
@@ -92,19 +96,47 @@ class Command(BaseCommand):
 
         self.stdout.write('Создаём аниме...')
         anime_titles = [
-            "Sword Art Online", "Attack on Titan", "One Punch Man", "My Hero Academia",
-            "Death Note", "Fullmetal Alchemist", "Demon Slayer", "Tokyo Ghoul",
-            "Steins;Gate", "Code Geass", "Hunter x Hunter", "Black Clover",
-            "Naruto", "Bleach", "One Piece", "Dragon Ball", "JoJo's Bizarre Adventure",
-            "Neon Genesis Evangelion", "Cowboy Bebop", "Ghost in the Shell",
-            "Your Name", "Spirited Away", "Princess Mononoke", "Akira", "A Silent Voice"
+            "Naruto", "One Piece", "Dragon Ball", "Attack on Titan",
+            "My Hero Academia", "Fullmetal Alchemist", "Death Note", "Sword Art Online",
+            "Demon Slayer", "Tokyo Ghoul", "Bleach", "Fairy Tail",
+            "Re:Zero", "One Punch Man", "Fate", "Neon Genesis Evangelion",
+            "Hunter x Hunter", "JoJo's Bizarre Adventure", "Naruto Shippuden", "Attack on Titan",
+            "Cowboy Bebop", "Gintama", "Yu Yu Hakusho", "Trigun",
+            "The Promised Neverland", "Steins;Gate", "Mob Psycho 100", "Black Clover",
+            "Tokyo Revengers", "Your Name", "Kaguya-sama", "Code Geass",
+            "D.Gray-man", "Akame ga Kill!", "Inuyasha", "Bleach",
+            "Clannad", "Monogatari", "Angel Beats!", "Mob Psycho 100",
+            "Hellsing", "Fruits Basket", "Black Lagoon", "Highschool of the Dead",
+            "Elfen Lied", "Neon Genesis Evangelion", "Spice and Wolf", "Cowboy Bebop",
+            "Angel Beats!", "Toradora!", "Bleach", "Naruto",
+            "Fate", "Naruto", "The Seven Deadly Sins", "Assassination Classroom",
+            "Bleach", "Fairy Tail", "Tokyo Ghoul", "Dragon Ball",
+            "JoJo's Bizarre Adventure", "Sword Art Online", "The Rising of the Shield Hero", "No Game No Life",
+            "Attack on Titan", "Overlord", "Re:Zero", "Violet Evergarden",
+            "Made in Abyss", "Psycho-Pass", "Hunter x Hunter", "K-On!",
+            "Fairy Tail", "Tokyo Ghoul", "Beastars", "Great Teacher Onizuka",
+            "Hachimitsu to Clover", "K-On!", "Attack on Titan", "Code Geass",
+            "Bleach", "Fate", "No Game No Life", "InuYasha",
+            "Tengen Toppa Gurren Lagann", "Nodame Cantabile", "Detective Conan", "JoJo's Bizarre Adventure",
+            "Angel Beats!", "Dragon Ball", "Black Clover", "Yu-Gi-Oh!",
+            "JoJo's Bizarre Adventure"
         ]
+
+        weights = []
+        for status in statuses:
+            if status.name == 'Анонс':
+                weights.append(0.1)  # Низкий шанс для 'Анонс'
+            elif status.name == 'Вышел':
+                weights.append(0.6)
+            else:
+                weights.append(0.3)  
         
-        for i in range(ANIME_COUNT):
-            status = choice(statuses)
+        for i in range(len(anime_titles)):
+            status = choices(statuses, weights=weights, k=1)[0]
+            
             if status.name == 'Анонс':
                 date = None
-                if random() > 0.7:  # 30% шанс что будет студия/директор
+                if random() > 0.8:  # 90% шанс что будет студия/директор
                     studio = choice(studios)
                     director = choice(directors)
                 else:
@@ -115,13 +147,7 @@ class Command(BaseCommand):
                 studio = choice(studios)
                 director = choice(directors)
 
-            if i < len(anime_titles):
-                title = anime_titles[i]
-            else:
-                prefix = choice(["Super ", "Magical ", "Divine ", "Epic ", "Legendary ", ""])
-                suffix = choice([" Story", " Chronicles", " Adventure", " Tales", " Saga", ""])
-                middle = fake.catch_phrase().replace(".", "").replace(",", "")
-                title = f"{prefix}{middle}{suffix}"
+            title = anime_titles[i]  # Берем только название из существующего списка
 
             # Подготавливаем жанры заранее
             selected_genres = fake.random_elements(
@@ -139,7 +165,9 @@ class Command(BaseCommand):
                 director=director,
                 picture=None,
             )
+            
             # Сразу же устанавливаем жанры
             anime.genres.set([g.id for g in selected_genres])
+
 
         self.stdout.write(self.style.SUCCESS('Данные успешно сгенерированы!'))

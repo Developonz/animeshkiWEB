@@ -4,9 +4,9 @@ from .serializers import AnimeSerializer, GenreSerializer, StudioSerializer, Dir
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.exceptions import NotAuthenticated, PermissionDenied
+from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth.models import User
-from django.db.models import Count, Avg, Max, Min
+from django.db.models import Count, Avg, Max, Min, F
 
 
 # Вьюсет для модели Anime
@@ -36,26 +36,21 @@ class AnimeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['GET'], url_path="stats")
     def stats(self, request):
-        queryset = self.get_queryset()  # Используем get_queryset() для учета прав доступа
+        queryset = self.get_queryset() 
         stats = {
-            'total_anime': queryset.count(),
-            'status_distribution': dict(
+            'Всего аниме:': queryset.count(),
+            'Распределение по статусу:': dict(
                 queryset.values('status__name')
                 .annotate(count=Count('id'))
                 .values_list('status__name', 'count')
             ),
-            'releases_by_year': dict(
-                queryset.filter(date__isnull=False)
-                .values_list('date__year')
-                .annotate(count=Count('id'))
-                .order_by('date__year')
+            'Максимум аниме в году:': dict(
+                queryset.filter(date__isnull=False)  # Исключаем записи без дат
+                .annotate(year=F('date__year'))  # Добавляем год как отдельное поле
+                .values('year')  # Группируем по году
+                .annotate(count=Count('id'))  # Считаем количество записей для каждого года
+                .order_by('-count')[:1]
                 .values_list('date__year', 'count')
-            ),
-            'top_studios': list(
-                queryset.values('studio__name')
-                .annotate(count=Count('id'))
-                .order_by('-count')
-                .values('studio__name', 'count')
             )
         }
         return Response(stats)
@@ -67,11 +62,11 @@ class GenreViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['GET'], url_path="stats")
     def stats(self, request):
         stats = {
-            'total_genres': Genre.objects.count(),
-            'most_popular': Genre.objects.annotate(
+            'Всего жанров:': Genre.objects.count(),
+            'Наиболее популярный жанр:': Genre.objects.annotate(
                 usage_count=Count('anime')
             ).order_by('-usage_count').first().name,
-            'least_popular': Genre.objects.annotate(
+            'Наименее популярный жанр:': Genre.objects.annotate(
                 usage_count=Count('anime')
             ).order_by('usage_count').first().name
         }
@@ -84,13 +79,10 @@ class StudioViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['GET'], url_path="stats")
     def stats(self, request):
         stats = {
-            'total_studios': Studio.objects.count(),
-            'most_productive': Studio.objects.annotate(
+            'Всего студий:': Studio.objects.count(),
+            'Наиболее продуктивная студия:': Studio.objects.annotate(
                 works_count=Count('anime')
-            ).order_by('-works_count').first().name,
-            'avg_works_per_studio': Studio.objects.annotate(
-                works_count=Count('anime')
-            ).aggregate(avg=Avg('works_count'))['avg']
+            ).order_by('-works_count').first().name
         }
         return Response(stats)
 
@@ -101,13 +93,10 @@ class DirectorViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['GET'], url_path="stats")
     def stats(self, request):
         stats = {
-            'total_directors': Director.objects.count(),
-            'most_experienced': Director.objects.annotate(
+            'Всего режиссёров:': Director.objects.count(),
+            'Самый опытный режиссер:': Director.objects.annotate(
                 years_active=Max('anime__date') - Min('anime__date')
-            ).order_by('-years_active').first().name,
-            'avg_works': Director.objects.annotate(
-                works_count=Count('anime')
-            ).aggregate(avg=Avg('works_count'))['avg']
+            ).order_by('-years_active').first().name
         }
         return Response(stats)
 
@@ -132,12 +121,9 @@ class CountryViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['GET'], url_path="stats")
     def stats(self, request):
         stats = {
-            'total_countries': Country.objects.count(),
-            'most_studios': Country.objects.annotate(
+            'Всего стран:': Country.objects.count(),
+            'Больше всего студий в:': Country.objects.annotate(
                 studios_count=Count('studio')
-            ).order_by('-studios_count').first().name,
-            'avg_studios_per_country': Country.objects.annotate(
-                studios_count=Count('studio')
-            ).aggregate(avg=Avg('studios_count'))['avg']
+            ).order_by('-studios_count').first().name
         }
         return Response(stats)

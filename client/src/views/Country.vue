@@ -31,6 +31,20 @@
           </div>
         </div>
       </form>
+      
+      <div class="card mb-4 mt-4">
+        <div class="card-body">
+          <h5 class="card-title">Статистика стран</h5>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <strong>Всего стран: </strong> {{ countryStats['Всего стран:'] || 0 }}
+            </li>
+            <li class="list-group-item">
+              <strong>Больше всего студий в: </strong> {{ countryStats['Больше всего студий в:'] || '-' }}
+            </li>
+          </ul>
+        </div>
+      </div>
   
       <!-- Список стран -->
       <table class="table table-striped mt-5">
@@ -190,6 +204,16 @@
   const countryAddImageUrl = ref();
   const countryPictureToEditRef = ref();
   const countryAddImageEditUrl = ref();
+  const countryStats = ref({});
+  
+  async function fetchCountryStats() {
+    try {
+      const response = await axios.get('/api/countries/stats/');
+      countryStats.value = response.data;
+    } catch (error) {
+      console.error('Ошибка при загрузке статистики стран:', error);
+    }
+  }
   
   // Методы для обработки изображений
   function countryAddPictureChange() {
@@ -327,6 +351,7 @@
   onMounted(() => {
     fetchCountries();
     axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
+    fetchCountryStats();
   
     const modalElement = document.getElementById('editCountryModal');
     editModal.value = new Modal(modalElement, {

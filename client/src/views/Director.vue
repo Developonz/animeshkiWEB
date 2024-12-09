@@ -1,11 +1,11 @@
 <template>
     <div class="container mt-5">
-      <h1 class="mb-4">Директора</h1>
+      <h1 class="mb-4">режиссеры</h1>
   
-      <!-- Форма для добавления нового директора -->
+      <!-- Форма для добавления нового режиссера -->
       <form @submit.prevent="onDirectorAdd">
         <div class="row align-items-end">
-          <!-- Поле Имя директора -->
+          <!-- Поле Имя режиссера -->
           <div class="col">
             <div class="form-floating">
               <input
@@ -13,9 +13,9 @@
                 class="form-control"
                 v-model="directorToAdd.name"
                 required
-                placeholder="Имя директора"
+                placeholder="Имя режиссера"
               />
-              <label>Имя директора</label>
+              <label>Имя режиссера</label>
             </div>
           </div>
           <div class="col d-flex justify-content-end">
@@ -31,12 +31,26 @@
           </div>
         </div>
       </form>
+
+      <div class="card mb-4 mt-4">
+        <div class="card-body">
+          <h5 class="card-title">Статистика режиссеров</h5>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <strong>Всего режиссеров: </strong> {{ directorStats['Всего режиссёров:'] || 0 }}
+            </li>
+            <li class="list-group-item">
+              <strong>Самый опытный режиссер: </strong> {{ directorStats['Самый опытный режиссер:'] || 0 }}
+            </li>
+          </ul>
+        </div>
+      </div>
   
       <!-- Список директоров -->
       <table class="table table-striped mt-5">
         <thead>
           <tr>
-            <th>Имя директора</th>
+            <th>Имя режиссера</th>
             <th class="col-2 text-center">Изображение</th>
             <th class="col-md-1">Действия</th>
           </tr>
@@ -49,7 +63,7 @@
                 <img 
                   :src="getFullImageUrl(director.picture)" 
                   style="max-height: 60px; max-width: auto; cursor: pointer;" 
-                  alt="Изображение директора"
+                  alt="Изображение режиссера"
                   @click="showImage(getFullImageUrl(director.picture))"
                 />
               </div>
@@ -89,7 +103,7 @@
             <form @submit.prevent="onDirectorUpdate">
               <div class="modal-header">
                 <h5 class="modal-title" id="editDirectorModalLabel">
-                  Редактировать директора
+                  Редактировать режиссера
                 </h5>
                 <button
                   type="button"
@@ -105,9 +119,9 @@
                     class="form-control"
                     v-model="directorToEdit.name"
                     required
-                    placeholder="Имя директора"
+                    placeholder="Имя режиссера"
                   />
-                  <label>Имя директора</label>
+                  <label>Имя режиссера</label>
                 </div>
                 <div class="row mt-3">
                   <div class="col">
@@ -189,6 +203,18 @@
   const directorAddImageUrl = ref();
   const directorPictureToEditRef = ref();
   const directorAddImageEditUrl = ref();
+
+  const directorStats = ref({});
+
+  async function fetchDirectorStats() {
+  try {
+    const response = await axios.get('/api/directors/stats/');
+    directorStats.value = response.data;
+  } catch (error) {
+    console.error('Ошибка при загрузке статистики аниме:', error);
+    alert('Не удалось загрузить статистику аниме.');
+  }
+}
   
   // Функции загрузки данных с бэкенда
   async function fetchDirectors() {
@@ -196,12 +222,12 @@
       const response = await axios.get('/api/directors/');
       directors.value = response.data;
     } catch (error) {
-      console.error('Ошибка при загрузке директоров:', error);
-      alert('Не удалось загрузить директоров.');
+      console.error('Ошибка при загрузке режиссеров:', error);
+      alert('Не удалось загрузить режиссеров.');
     }
   }
   
-  // Функция добавления нового директора
+  // Функция добавления нового режиссера
   async function onDirectorAdd() {
     const formData = new FormData();
     formData.append('name', directorToAdd.value.name);
@@ -220,19 +246,19 @@
       resetAddForm();
     } catch (error) {
       if (error.response?.status !== 201) { // Игнорируем успешное создание
-        handleError(error, 'добавлении директора');
+        handleError(error, 'добавлении режиссера');
       }
     }
   }
   
-  // Функция подготовки к редактированию директора
+  // Функция подготовки к редактированию режиссера
   function onDirectorEdit(director) {
     directorToEdit.value = { ...director };
     // Показать модальное окно после подготовки данных
     editModal.value.show();
   }
   
-  // Функция обновления директора
+  // Функция обновления режиссера
   async function onDirectorUpdate() {
     const formData = new FormData();
     formData.append('name', directorToEdit.value.name);
@@ -257,13 +283,13 @@
       }
       closeModal();
     } catch (error) {
-      handleError(error, 'обновлении директора');
+      handleError(error, 'обновлении режиссера');
     }
   }
   
-  // Функция удаления директора
+  // Функция удаления режиссера
   async function onDirectorDelete(id) {
-    if (!confirm('Вы уверены, что хотите удалить этого директора?')) {
+    if (!confirm('Вы уверены, что хотите удалить этого режиссера?')) {
       return;
     }
   
@@ -271,8 +297,8 @@
       await axios.delete(`/api/directors/${id}/`);
       await fetchDirectors();
     } catch (error) {
-      console.error('Ошибка при удалении директора:', error);
-      alert('Не удалось удалить директора.');
+      console.error('Ошибка при удалении режиссера:', error);
+      alert('Не удалось удалить режиссера.');
     }
   }
   
@@ -318,6 +344,8 @@
       backdrop: 'static', // Не закрывать при клике на backdrop
       keyboard: false, // Не закрывать при нажатии клавиши Esc
     });
+
+    fetchDirectorStats();
   
     // Инициализация модального окна для изображения
     imageModal.value = new Modal(document.getElementById('imageModal'));

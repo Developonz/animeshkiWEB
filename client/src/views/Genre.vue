@@ -25,6 +25,23 @@
           </div>
         </div>
       </form>
+
+      <div class="card mb-4 mt-4">
+        <div class="card-body">
+          <h5 class="card-title">Статистика жанров</h5>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <strong>Всего жанров: </strong> {{ genreStats['Всего жанров:'] || 0 }}
+            </li>
+            <li class="list-group-item">
+              <strong>Наиболее популярный жанр: </strong> {{ genreStats['Наиболее популярный жанр:'] || '-' }}
+            </li>
+            <li class="list-group-item">
+              <strong>Наименее популярный жанр: </strong> {{ genreStats['Наименее популярный жанр:'] || '-' }}
+            </li>
+          </ul>
+        </div>
+      </div>
   
       <!-- Список жанров -->
       <table class="table table-striped mt-5">
@@ -130,6 +147,17 @@
   
   // Экземпляр модального окна
   const editModal = ref(null);
+
+  const genreStats = ref({});
+
+  async function fetchGenreStats() {
+    try {
+      const response = await axios.get('/api/genres/stats/');
+      genreStats.value = response.data;
+    } catch (error) {
+      console.error('Ошибка при загрузке статистики жанров:', error);
+    }
+  }
   
   // Функции загрузки данных с бэкенда
   async function fetchGenres() {
@@ -226,6 +254,7 @@
     fetchGenres();
     // Установка CSRF токена
     axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
+    fetchGenreStats();
   
     // Инициализация модального окна
     const modalElement = document.getElementById('editGenreModal');
