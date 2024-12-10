@@ -10,24 +10,21 @@ class AnimeSerializer(serializers.ModelSerializer):
     director = serializers.PrimaryKeyRelatedField(queryset=Director.objects.all(), allow_null=True, required=False)
     genres = serializers.PrimaryKeyRelatedField(queryset=Genre.objects.all(), many=True, required=True)
     picture_url = serializers.SerializerMethodField(read_only=True)
-
+    username = serializers.CharField(source='user.username', read_only=True) 
+    
     class Meta:
         model = Anime
-        fields = '__all__'
-
+        fields = '__all__' 
+    
     def get_picture_url(self, obj):
         request = self.context.get('request')
         if obj.picture and hasattr(obj.picture, 'url'):
             return request.build_absolute_uri(obj.picture.url)
         return None
-
+    
     def validate(self, data):
         status = data.get('status')
         if status and status.name.lower() != 'анонс':
-            if not data.get('studio') and not data.get('director'):
-                raise serializers.ValidationError({
-                    'studio': 'Для не анонсированного аниме студия и режиссёр обязательны'
-                })
             if not data.get('studio'):
                 raise serializers.ValidationError({
                     'studio': 'Для не анонсированного аниме студия обязательна'
@@ -42,7 +39,7 @@ class AnimeSerializer(serializers.ModelSerializer):
                 'genres': 'Поле "Жанры" обязательно для заполнения.'
             })
         return data
-
+    
     def create(self, validated_data):
         genres = validated_data.pop('genres', [])
         if 'request' in self.context:
@@ -50,7 +47,7 @@ class AnimeSerializer(serializers.ModelSerializer):
         anime = Anime.objects.create(**validated_data)
         anime.genres.set(genres)
         return anime
-
+    
     def update(self, instance, validated_data):
         genres = validated_data.pop('genres', None)
         for attr, value in validated_data.items():

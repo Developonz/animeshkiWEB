@@ -3,7 +3,7 @@
       <h1 class="mb-4">Студии</h1>
   
       <!-- Форма для добавления новой студии -->
-      <form @submit.prevent="onStudioAdd">
+      <form @submit.prevent="onStudioAdd" v-if="is_auth && is_staff">
         <div class="row align-items-end">
           <!-- Поле Название студии -->
           <div class="col">
@@ -167,6 +167,12 @@
   import axios from 'axios';
   import Cookies from 'js-cookie';
   import { Modal } from 'bootstrap';
+
+  import { useUserProfileStore } from "@/stores/UserProfileStore";
+  import { storeToRefs } from 'pinia';
+
+  const userProfileStore = useUserProfileStore();
+  const { is_auth, username, is_superuser, is_staff } = storeToRefs(userProfileStore);
   
   // Реактивные переменные
   const studios = ref([]);
@@ -282,6 +288,8 @@
   
   // Загрузка данных при монтировании компонента
   onMounted(() => {
+    userProfileStore.fetchUserProfile();
+    
     fetchStudios();
     fetchCountries();
     // Установка CSRF токена

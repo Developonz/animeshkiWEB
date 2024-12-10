@@ -5,7 +5,8 @@ export const useUserProfileStore = defineStore('userProfile', {
   state: () => ({
     is_auth: false,
     username: '',
-    is_superuser: false
+    is_superuser: false,
+    is_staff: false,
   }),
 
   actions: {
@@ -16,12 +17,14 @@ export const useUserProfileStore = defineStore('userProfile', {
           this.is_auth = response.data.is_authenticated || false
           this.username = response.data.name || ''
           this.is_superuser = response.data.is_superuser || false
+          this.is_staff = response.data.is_staff || false
         }
       } catch (error) {
         console.log('Пользователь не аутентифицирован')
         this.is_auth = false
         this.username = ''
         this.is_superuser = false
+        this.is_staff = false
       }
     }
   }

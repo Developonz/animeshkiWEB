@@ -2,11 +2,10 @@
   <div class="container mt-5">
     <h1 class="mb-4">Аниме</h1>
 
-    <!-- Форма для добавления нового аниме -->
-    <form @submit.prevent="onAnimeAdd">
+    <!-- Форма для добавления нового аниме (только для аутентифицированных пользователей) -->
+    <form @submit.prevent="onAnimeAdd" v-if="is_auth && is_staff">
       <!-- Первая строка полей -->
       <div class="row align-items-end">
-
         <!-- Поле Название -->
         <div class="col">
           <div class="form-floating">
@@ -61,6 +60,7 @@
               :required="!isAnnouncement"
               placeholder="Студия"
             >
+              <option disabled value="">Выберите студию</option>
               <option
                 v-for="studio in studios"
                 :key="studio.id"
@@ -82,6 +82,7 @@
               :required="!isAnnouncement"
               placeholder="Директор"
             >
+              <option disabled value="">Выберите директора</option>
               <option
                 v-for="director in directors"
                 :key="director.id"
@@ -164,18 +165,26 @@
       </div>
     </form>
 
-    <!-- Фильтр по пользователям -->
-    <div v-if="is_superuser" class="mb-4">
+    <!-- Фильтр по пользователям и собственному аниме -->
+    <div v-if="is_superuser || is_staff" class="mb-4">
       <div class="form-floating">
         <select class="form-select w-25" v-model="userToFilter">
-          <option value="all">Все пользователи</option>
-          <option 
-            v-for="username in usersToFilter" 
-            :key="username"
-            :value="username"
-          >
-            {{ username }}
-          </option>
+          <!-- Для суперпользователей -->
+          <template v-if="is_superuser">
+            <option value="all">Все пользователи</option>
+            <option 
+              v-for="usernameOption in usersToFilter" 
+              :key="usernameOption"
+              :value="usernameOption"
+            >
+              {{ usernameOption }}
+            </option>
+          </template>
+          <!-- Для сотрудников -->
+          <template v-else-if="is_staff">
+            <option value="all">Все аниме</option>
+            <option value="my">Мои аниме</option>
+          </template>
         </select>
         <label>Фильтр по пользователю</label>
       </div>
@@ -209,59 +218,43 @@
       </div>
     </div>
 
-    <!-- Список аниме -->
-    <table class="table table-striped mt-5">
-      <thead>
-        <tr>
-          <th>Название</th>
-          <th>Дата выпуска</th>
-          <th>Студия</th>
-          <th>Директор</th>
-          <th>Жанры</th>
-          <th>Статус</th>
-          <th class="col-2 text-center">Изображение</th>
-          <th>Действия</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="anime in animes" :key="anime.id">
-          <td>{{ anime.title_name }}</td>
-          <td>{{ formatDate(anime.date) }}</td>
-          <td>{{ getStudioName(anime.studio) }}</td>
-          <td>{{ getDirectorName(anime.director) }}</td>
-          <td>{{ getGenreNames(anime.genres).join(', ') }}</td>
-          <td>{{ getStatusName(anime.status) }}</td>
-          <td>
-            <div v-if="anime.picture" class="d-flex justify-content-center align-items-center">
-              <img 
-                :src="getFullImageUrl(anime.picture)" 
-                style="max-height: 60px; max-width: auto; cursor: pointer;" 
-                alt="Изображение аниме"
-                @click="showImage(getFullImageUrl(anime.picture))"
-              />
+    <!-- Сетка плиток аниме -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+      <div class="col" v-for="anime in animes" :key="anime.id">
+        <div class="card h-100 position-relative">
+          <!-- Изображение и название как ссылка -->
+          <router-link :to="`/anime/${anime.id}`" class="text-decoration-none text-dark">
+            <img 
+              :src="anime.picture_url || '/media/noIMG.jpg'" 
+              class="card-img-top" 
+              alt="Изображение аниме" 
+              style="height: 200px; object-fit: cover;"
+            />
+            <div class="card-body text-center"> <!-- Центрируем текст -->
+              <h5 class="card-title">{{ anime.title_name }}</h5>
             </div>
-          </td>
-          <td>
-            <button
-              class="btn btn-success btn-sm me-2"
-              @click="onAnimeEdit(anime)"
-              data-bs-toggle="modal"
-              data-bs-target="#editAnimeModal"
+          </router-link>
+
+          <!-- Кнопки редактирования и удаления для суперпользователей и сотрудников (только свои аниме для сотрудников) -->
+          <div v-if="canEditDelete(anime)" class="position-absolute top-0 end-0 p-2">
+            <button 
+              class="btn btn-sm btn-success me-1" 
+              @click.stop="onAnimeEdit(anime)"
               title="Редактировать"
             >
               <i class="bi bi-pen-fill"></i>
             </button>
-            <button
-              class="btn btn-danger btn-sm"
-              @click="onAnimeDelete(anime.id)"
+            <button 
+              class="btn btn-sm btn-danger" 
+              @click.stop="onAnimeDelete(anime.id)"
               title="Удалить"
             >
               <i class="bi bi-x"></i>
             </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Модальное окно для редактирования -->
     <div
@@ -277,7 +270,7 @@
           <form @submit.prevent="onAnimeUpdate">
             <div class="modal-header">
               <h5 class="modal-title" id="editAnimeModalLabel">
-                Редактироть аниме
+                Редактировать аниме
               </h5>
               <button
                 type="button"
@@ -437,17 +430,17 @@
                 <div class="col">
                   <div class="d-flex align-items-center justify-content-end">
                     <img 
-                      :src="animeAddImageEditUrl || animeToEdit.picture" 
+                      :src="animeAddImageEditUrl || animeToEdit.picture_url || '/media/noIMG.jpg'" 
                       alt="Изображение" 
                       style="max-height: 60px; max-width: 60px;" 
-                      v-if="animeAddImageEditUrl || animeToEdit.picture"
+                      v-if="animeAddImageEditUrl || animeToEdit.picture_url"
                       class="me-2"
                     />
                     <button 
                       type="button" 
                       class="btn btn-danger btn-sm me-2" 
                       @click="removePicture" 
-                      v-if="animeAddImageEditUrl || animeToEdit.picture"
+                      v-if="animeAddImageEditUrl || animeToEdit.picture_url"
                       title="Удалить изображение"
                     >
                       <i class="bi bi-trash"></i>
@@ -474,7 +467,7 @@
       </div>
     </div>
 
-
+    <!-- Модальное окно для просмотра изображения -->
     <div class="modal fade" id="imageModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -486,27 +479,21 @@
       </div>
     </div>
   </div>
-
-  
-
 </template>
 
-
 <script setup>
-
 import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { Modal } from 'bootstrap';
 
 import { useUserProfileStore } from "@/stores/UserProfileStore";
-const userProfileStore = useUserProfileStore();
-
-// Если нужен доступ к состоянию store через storeToRefs
 import { storeToRefs } from 'pinia';
-const { is_auth, username, is_superuser } = storeToRefs(userProfileStore);
 
-// Реативные переменные
+const userProfileStore = useUserProfileStore();
+const { is_auth, username, is_superuser, is_staff } = storeToRefs(userProfileStore);
+
+// Реактивные переменные
 const animes = ref([]);
 const animeToAdd = ref({
   title_name: '',
@@ -530,31 +517,32 @@ const studios = ref([]);
 const directors = ref([]);
 const statuses = ref([]);
 
-// Для поя жанров в добавлении
+// Для выбора жанров при добавлении
 const availableGenresAdd = ref([]);
 const selectedGenresAdd = ref([]);
 const selectedAvailableGenresAdd = ref([]);
 const selectedSelectedGenresAdd = ref([]);
 
-// Для поля жанров в редактировании
+// Для выбора жанров при редактировании
 const availableGenresEdit = ref([]);
 const selectedGenresEdit = ref([]);
 const selectedAvailableGenresEdit = ref([]);
 const selectedSelectedGenresEdit = ref([]);
 
-// Новые реактивные переменные
+// Новые реактивные переменные для изображений
 const animesPictureRef = ref();
 const animeAddImageUrl = ref();
 const animesPictureToEditRef = ref();
 const animeAddImageEditUrl = ref();
 
-// Экземпляр модального окна
+// Экземпляры модальных окон
 const editModal = ref(null);
+const imageModal = ref(null);
 
+// Статистика аниме
 const animeStats = ref({});
 
-
-// Добавьте вычисляемое свойство
+// Вычисляемые свойства для определения, является ли статус анонсом
 const isAnnouncement = computed(() => {
   const announcementStatus = statuses.value.find(s => s.name.toLowerCase() === 'анонс');
   return animeToAdd.value.status === announcementStatus?.id;
@@ -569,9 +557,14 @@ const isAnnouncementEdit = computed(() => {
 const userToFilter = ref('all');
 const usersToFilter = ref([]);
 
+// Функция загрузки статистики аниме с учетом фильтра
 async function fetchAnimeStats() {
   try {
-    const response = await axios.get('/api/animes/stats/');
+    let url = '/api/animes/stats/';
+    if (userToFilter.value) {
+      url += `?user=${userToFilter.value}`;
+    }
+    const response = await axios.get(url);
     animeStats.value = response.data;
   } catch (error) {
     console.error('Ошибка при загрузке статистики аниме:', error);
@@ -579,26 +572,38 @@ async function fetchAnimeStats() {
   }
 }
 
-
-// Функция загрузки пользователей
+// Функция загрузки пользователей (только для суперпользователей)
 async function fetchUsers() {
   try {
     const response = await axios.get('/api/animes/users/');
     usersToFilter.value = response.data;
   } catch (error) {
     console.error('Ошибка при загрузке пользователей:', error);
+    alert('Не удалось загрузить список пользователей.');
   }
 }
 
-// Измените существующую функцию fetchAnimes
+// Функция загрузки списка аниме с учетом фильтра
 async function fetchAnimes() {
   try {
     let url = '/api/animes/';
-    if (userToFilter.value && userToFilter.value !== 'all') {
-      url += `?user=${userToFilter.value}`;
+    if (userToFilter.value) {
+      // Для суперпользователей и сотрудников
+      if (is_superuser.value) {
+        // Если выбран пользователь (не 'all')
+        if (userToFilter.value !== 'all') {
+          url += `?user=${userToFilter.value}`;
+        }
+      } else if (is_staff.value) {
+        // Для сотрудников: 'all' или 'my'
+        url += `?user=${userToFilter.value}`;
+      }
     }
     const response = await axios.get(url);
     animes.value = response.data;
+
+    // Обновляем статистику после получения аниме
+    await fetchAnimeStats();
   } catch (error) {
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       alert('Пожалуйста, авторизуйтесь для просмотра списка аниме');
@@ -609,7 +614,7 @@ async function fetchAnimes() {
   }
 }
 
-// Функции загрузки данных с бэкенда
+// Функции загрузки других данных
 async function fetchGenres() {
   try {
     const response = await axios.get('/api/genres/');
@@ -627,7 +632,7 @@ async function fetchStudios() {
     studios.value = response.data;
   } catch (error) {
     console.error('Ошибка при загрузке студий:', error);
-    alert('Не удалось агрузить студии.');
+    alert('Не удалось загрузить студии.');
   }
 }
 
@@ -645,7 +650,6 @@ async function fetchStatuses() {
   try {
     const response = await axios.get('/api/statuses/');
     statuses.value = response.data;
-    console.log('Статусы:', statuses.value);
   } catch (error) {
     console.error('Ошибка при загрузке статусов:', error);
     alert('Не удалось загрузить статусы.');
@@ -654,25 +658,32 @@ async function fetchStatuses() {
 
 // Новые методы для обработки изображений
 async function animesAddPictureChange() {
-  animeAddImageUrl.value = URL.createObjectURL(animesPictureRef.value.files[0]);
+  if (animesPictureRef.value.files[0]) {
+    animeAddImageUrl.value = URL.createObjectURL(animesPictureRef.value.files[0]);
+  } else {
+    animeAddImageUrl.value = null;
+  }
 }
 
 async function animesAddPictureEditChange() {
-  animeAddImageEditUrl.value = URL.createObjectURL(animesPictureToEditRef.value.files[0]);
+  if (animesPictureToEditRef.value.files[0]) {
+    animeAddImageEditUrl.value = URL.createObjectURL(animesPictureToEditRef.value.files[0]);
+  } else {
+    animeAddImageEditUrl.value = null;
+  }
 }
 
 // Функция добавления нового аниме
 async function onAnimeAdd() {
-
   const formData = new FormData();
-  
+
   formData.append('title_name', animeToAdd.value.title_name);
   formData.append('status', animeToAdd.value.status);
-  
+
   if (animeToAdd.value.date) {
     formData.append('date', new Date(animeToAdd.value.date).toISOString().split('T')[0]);
   }
-  
+
   if (animeToAdd.value.studio) {
     formData.append('studio', animeToAdd.value.studio);
   }
@@ -680,8 +691,8 @@ async function onAnimeAdd() {
     formData.append('director', animeToAdd.value.director);
   }
 
-  selectedGenresAdd.value.forEach(genre => {
-    formData.append('genres', genre.id);
+  selectedGenresAdd.value.forEach(genreId => {
+    formData.append('genres', genreId);
   });
 
   if (animesPictureRef.value.files[0]) {
@@ -717,21 +728,30 @@ function resetAddForm() {
   selectedGenresAdd.value = [];
   selectedAvailableGenresAdd.value = [];
   selectedSelectedGenresAdd.value = [];
+  // Сброс изображения
+  animeAddImageUrl.value = null;
+  if (animesPictureRef.value) {
+    animesPictureRef.value.value = '';
+  }
 }
 
 // Функция подготовки к редактированию аниме
 function onAnimeEdit(anime) {
   animeToEdit.value = { ...anime };
-  // Сбрасываем URL временного изображения при открытии формы редактирования
+  // Сброс URL временного изображения при открытии формы редактирования
   animeAddImageEditUrl.value = null;
+  
+  // Сохранение полных объектов жанров, а не только их ID
   selectedGenresEdit.value = genres.value.filter((genre) =>
     anime.genres.includes(genre.id)
   );
   availableGenresEdit.value = genres.value.filter(
     (genre) => !anime.genres.includes(genre.id)
   );
+  
   selectedAvailableGenresEdit.value = [];
   selectedSelectedGenresEdit.value = [];
+  
   // Показать модальное окно после подготовки данных
   editModal.value.show();
 }
@@ -775,7 +795,7 @@ async function onAnimeUpdate() {
       },
     });
     await fetchAnimes();
-    // Очищаем поле с картинкой после успешного обновления
+    // Очистка поля с картинкой после успешного обновления
     animeAddImageEditUrl.value = null;
     if (animesPictureToEditRef.value) {
       animesPictureToEditRef.value.value = '';
@@ -833,7 +853,7 @@ function toggleGenresAdd() {
 // Функция переключения жанров в редактировании
 function toggleGenresEdit() {
   if (selectedAvailableGenresEdit.value.length > 0) {
-    // ремещение из доступных в выбранные
+    // Перемещение из доступных в выбранные
     selectedAvailableGenresEdit.value.forEach((genreId) => {
       const genre = availableGenresEdit.value.find((g) => g.id === genreId);
       if (genre) {
@@ -845,7 +865,7 @@ function toggleGenresEdit() {
     });
     selectedAvailableGenresEdit.value = [];
   } else if (selectedSelectedGenresEdit.value.length > 0) {
-    // Перемщение из выбранных в доступные
+    // Перемещение из выбранных в доступные
     selectedSelectedGenresEdit.value.forEach((genreId) => {
       const genre = selectedGenresEdit.value.find((g) => g.id === genreId);
       if (genre) {
@@ -857,36 +877,6 @@ function toggleGenresEdit() {
     });
     selectedSelectedGenresEdit.value = [];
   }
-}
-
-// Вспомогательные функции для отображения имен
-function getGenreNames(genreIds) {
-  return genres.value
-    .filter((genre) => genreIds.includes(genre.id))
-    .map((genre) => genre.name);
-}
-
-function getStudioName(studioId) {
-  const studio = studios.value.find((studio) => studio.id === studioId);
-  return studio ? studio.name : 'Не выбрано';
-}
-
-function getDirectorName(directorId) {
-  const director = directors.value.find(
-    (director) => director.id === directorId
-  );
-  return director ? director.name : 'Не выбрано';
-}
-
-function getStatusName(statusId) {
-  const status = statuses.value.find((status) => status.id === statusId);
-  return status ? status.name : 'Не выбрано';
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return 'Не указана';
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  return new Date(dateStr).toLocaleDateString(undefined, options);
 }
 
 // Функция для обработки ошибок
@@ -903,24 +893,55 @@ function handleError(error, context) {
   }
 }
 
-// Добавьте новую функцию для получения полного URL изображения
-function getImageUrl(relativePath) {
-  if (!relativePath) return null;
+// Функция закрытия модального окна редактирования
+function closeModal() {
+  const modalElement = document.getElementById('editAnimeModal');
+  const modalInstance = Modal.getInstance(modalElement);
+  modalInstance.hide();
   
-  // Если путь уже начинается с http или https
-  if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
-    return relativePath;
+  // Очистка полей изображения
+  animeAddImageEditUrl.value = null;
+  if (animesPictureToEditRef.value) {
+    animesPictureToEditRef.value.value = '';
   }
   
-  // Для отосительных путей добвляем базовый URL Django сервера
-  const baseUrl = 'http://localhost:8000';
-  // Убираем дублирующиеся слеши
-  const cleanPath = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
-  
-  return `${baseUrl}${cleanPath}`;
+  setTimeout(() => {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  }, 150);
 }
 
-// В onMounted добавьте вызов fetchUsers
+// Функция удаления изображения при редактировании
+function removePicture() {
+  animeToEdit.value.picture = null;
+  animeAddImageEditUrl.value = null;
+  if (animesPictureToEditRef.value) {
+    animesPictureToEditRef.value.value = '';
+  }
+}
+
+// Модальное окно для просмотра увеличенного изображения
+const selectedImage = ref('');
+function showImage(imageUrl) {
+  selectedImage.value = imageUrl;
+  const modal = new Modal(document.getElementById('imageModal'));
+  modal.show();
+}
+
+// Функция проверки, может ли текущий пользователь редактировать или удалять аниме
+function canEditDelete(anime) {
+  return is_superuser.value || (is_staff.value && anime.username === username.value);
+}
+
+// Отслеживание изменений фильтра по пользователям и собственному аниме
+watch(userToFilter, () => {
+  fetchAnimes();
+});
+
+// Загрузка данных при монтировании компонента
 onMounted(async () => {
   await userProfileStore.fetchUserProfile();
   
@@ -951,66 +972,9 @@ onMounted(async () => {
     keyboard: false,
   });
 });
-
-// В script setup добавим функцию
-function getFullImageUrl(url) {
-  if (!url) return '';
-  // Если URL абсолютный
-  if (url.startsWith('http')) return url;
-  
-  // Добавим console.log для отладки
-  const fullUrl = `${import.meta.env.VITE_API_URL}${url}`;
-  console.log('Image URL:', fullUrl);
-  return fullUrl;
-}
-
-// Добавить функцию closeModal
-function closeModal() {
-  const modalElement = document.getElementById('editAnimeModal');
-  const modalInstance = Modal.getInstance(modalElement);
-  modalInstance.hide();
-  
-  // Очистка полей изображения
-  animeAddImageEditUrl.value = null;
-  if (animesPictureToEditRef.value) {
-    animesPictureToEditRef.value.value = '';
-  }
-  
-  setTimeout(() => {
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    backdrops.forEach(backdrop => backdrop.remove());
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-  }, 150);
-}
-
-// В script setup добавить функцию
-function removePicture() {
-  animeToEdit.value.picture = null;
-  animeAddImageEditUrl.value = null;
-  if (animesPictureToEditRef.value) {
-    animesPictureToEditRef.value.value = '';
-  }
-}
-
-// В script setup добавить
-const selectedImage = ref('');
-const imageModal = ref(null);
-
-function showImage(imageUrl) {
-  selectedImage.value = imageUrl;
-  const modal = new Modal(document.getElementById('imageModal'));
-  modal.show();
-}
-
-// Добавьте watch для отслеживания изменений фильтра
-watch(userToFilter, () => {
-  fetchAnimes();
-});
 </script>
-<style lang="scss" scoped>
 
+<style lang="scss" scoped>
 /* Фиксированные размеры для полей выбора жанров */
 .fixed-width {
   width: 50%; 
@@ -1023,5 +987,37 @@ watch(userToFilter, () => {
 .form-label {
   margin-bottom: 0.5rem;
 }
-</style>
 
+/* Эффект наведения на карточку */
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: 0.3s;
+}
+
+/* Полупрозрачный фон для кнопок */
+.card .btn {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.card .btn:hover {
+  background-color: rgba(255, 255, 255, 1);
+}
+
+/* Дополнительные стили для кнопок */
+.card .btn-success {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+}
+
+.card .btn-danger {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+}
+
+/* Стили для изображений внутри карточек */
+.card-img-top {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+</style>

@@ -3,7 +3,7 @@
       <h1 class="mb-4">Жанры</h1>
   
       <!-- Форма для добавления нового жанра -->
-      <form @submit.prevent="onGenreAdd">
+      <form @submit.prevent="onGenreAdd" v-if="is_auth && is_staff"> 
         <div class="row align-items-end">
           <!-- Поле Название жанра -->
           <div class="col">
@@ -134,6 +134,12 @@
   import axios from 'axios';
   import Cookies from 'js-cookie';
   import { Modal } from 'bootstrap';
+
+  import { useUserProfileStore } from "@/stores/UserProfileStore";
+  import { storeToRefs } from 'pinia';
+
+  const userProfileStore = useUserProfileStore();
+  const { is_auth, username, is_superuser, is_staff } = storeToRefs(userProfileStore);
   
   // Реактивные переменные
   const genres = ref([]);
@@ -251,6 +257,8 @@
   
   // Загрузка данных при монтировании компонента
   onMounted(() => {
+    userProfileStore.fetchUserProfile();
+    
     fetchGenres();
     // Установка CSRF токена
     axios.defaults.headers.common['X-CSRFToken'] = Cookies.get('csrftoken');
