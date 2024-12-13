@@ -14,7 +14,7 @@
           <p><strong>Статус:</strong> {{ getStatusName(anime.status) }}</p>
           <p><strong>Дата выпуска:</strong> {{ formatDate(anime.date) }}</p>
           <p><strong>Студия:</strong> {{ getStudioName(anime.studio) }}</p>
-          <p><strong>Директор:</strong> {{ getDirectorName(anime.director) }}</p>
+          <p><strong>Режиссер:</strong> {{ getDirectorName(anime.director) }}</p>
           <p><strong>Жанры:</strong> {{ getGenreNames(anime.genres).join(', ') || 'Не указаны' }}</p>
         </div>
       </div>

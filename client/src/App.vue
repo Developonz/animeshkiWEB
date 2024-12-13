@@ -49,40 +49,7 @@
   </div>
 </template>
 
-<style>
-html, body {
-  overflow-y: scroll;
-  min-height: 100vh;
-}
 
-/* Глобальные стили для модальных окон */
-.modal-backdrop {
-  --bs-backdrop-opacity: 0.3;
-}
-
-/* Предотвращаем сдвиги контента */
-body {
-  overflow-y: scroll !important;
-  padding-right: 0 !important;
-}
-
-body.modal-open {
-  overflow-y: scroll !important;
-  position: fixed;
-  width: 100%;
-}
-
-.modal-open .modal {
-  overflow-x: hidden;
-  overflow-y: auto;
-  padding-right: 0 !important;
-}
-
-.modal {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-</style>
 
 <style scoped>
   .nav-link.active {
