@@ -8,6 +8,8 @@ from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth.models import User
 from django.db.models import Count, Avg, Max, Min, F
 from rest_framework import permissions
+from django.db.models import Q
+
 
 # Кастомные разрешения
 class IsSuperUserOrOwner(permissions.BasePermission):
@@ -52,22 +54,26 @@ class AnimeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        user_filter = self.request.query_params.get('user', None)
 
-        if self.request.user.is_superuser:
-            if user_filter and user_filter != 'all':
-                return qs.filter(user__username=user_filter)
-            return qs
-        elif self.request.user.is_authenticated and self.request.user.is_staff:
-            if user_filter == 'my':
-                return qs.filter(user=self.request.user)
-            elif user_filter == 'all':
-                return qs
-            else:
-                return qs.filter(user=self.request.user)
-        else:
-            # Неавторизованные пользователи видят все аниме
-            return qs
+        # Применяем фильтры только для списков (list) и статистики (stats)
+        if self.action in ['list', 'stats']:
+            directors = self.request.query_params.getlist('directors')
+            studios = self.request.query_params.getlist('studios')
+            statuses = self.request.query_params.getlist('statuses')
+
+            if directors and 'all' not in directors:
+                qs = qs.filter(director__id__in=directors)
+
+            if studios and 'all' not in studios:
+                qs = qs.filter(studio__id__in=studios)
+
+            if statuses and 'all' not in statuses:
+                qs = qs.filter(status__id__in=statuses)
+
+        # Для retrieve возвращаем полный qs без фильтрации
+        return qs
+    
+
 
     @action(detail=False, methods=['get'])
     def users(self, request):
